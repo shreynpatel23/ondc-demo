@@ -2,8 +2,5 @@
   background-color: #efefef;
   min-height: 100vh;
   height: 100%;
-}
-
-.dropdown_area {
-  height: 10vh;
+  padding: 25px;
 }
