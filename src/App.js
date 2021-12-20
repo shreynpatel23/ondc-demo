@@ -7,30 +7,40 @@ function App() {
   const [selectedApi, setSelectedApi] = useState();
   const [params, setParams] = useState();
   const [loading, setLoading] = useState(false);
-  const [response, setResponse] = useState();
+  const [response, setResponse] = useState([]);
   const [statusCode, setStatusCode] = useState();
   const formRef = useRef();
   function resetMyForm() {
     formRef?.current?.reset();
   }
-  async function handleApiHiy() {
-    setLoading(true);
+  async function handleApiHit() {
     try {
-      const { data, status } = await axios.post(
-        selectedApi.api_endpoint,
-        params
-      );
+      const { data, status } = await axios.post(selectedApi.api_endpoint, [
+        params,
+      ]);
       setStatusCode(status);
       setParams(null);
-      setResponse(data);
+      setResponse((response) => [...response, data]);
     } catch (err) {
       const { data, status } = err.response;
       setStatusCode(status);
-      setResponse(data);
+      setResponse((response) => [...response, data]);
     } finally {
       setLoading(false);
       resetMyForm();
     }
+  }
+  function callApiMultipleTimes() {
+    let counter = selectedApi?.count;
+    let timer = setInterval(async () => {
+      if (counter <= 0) {
+        clearInterval(timer);
+        return;
+      }
+      await handleApiHit().finally(() => {
+        counter -= 1;
+      });
+    }, 3000);
   }
   return (
     <div className="background">
@@ -59,7 +69,7 @@ function App() {
                     onClick={() => {
                       setSelectedApi(api);
                       setParams(null);
-                      setResponse();
+                      setResponse([]);
                       setStatusCode();
                       resetMyForm();
                     }}
@@ -108,7 +118,7 @@ function App() {
                       onClick={() => {
                         setParams(null);
                         setSelectedApi("");
-                        setResponse();
+                        setResponse([]);
                         setStatusCode();
                         resetMyForm();
                       }}
@@ -120,18 +130,25 @@ function App() {
                     <button
                       className="btn btn-success"
                       disabled={loading || !params}
-                      onClick={handleApiHiy}
+                      onClick={() => {
+                        setResponse([]);
+                        setLoading(true);
+                        handleApiHit();
+                        if (selectedApi.count > 0) {
+                          callApiMultipleTimes();
+                        }
+                      }}
                     >
                       Hit Me
                     </button>
                   </div>
                 </div>
               </form>
-              {response && <hr />}
+              {response?.length > 0 && <hr />}
               {loading ? (
                 <div className="spinner-border" role="status"></div>
               ) : (
-                response &&
+                response?.length > 0 &&
                 statusCode && (
                   <div className="py-3">
                     <div className="d-flex align-items-center pb-3">
@@ -142,9 +159,13 @@ function App() {
                         <p className="mb-0">{statusCode}</p>
                       </div>
                     </div>
-                    <pre>
-                      <code>{JSON.stringify(response, null, 4)}</code>
-                    </pre>
+                    {response?.map((res, index) => {
+                      return (
+                        <pre key={index}>
+                          <code>{JSON.stringify(res, null, 4)}</code>
+                        </pre>
+                      );
+                    })}
                   </div>
                 )
               )}
